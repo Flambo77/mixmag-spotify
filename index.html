@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Mixmag × Spotify</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root { --bg:#0a0a0a; --surface:#111; --border:#222; --green:#1DB954; --text:#f0f0f0; --muted:#555; --error:#ff4d4d; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Space Mono',monospace; min-height:100vh; padding:40px 20px; }
+  .container { max-width:720px; margin:0 auto; }
+  header { border-bottom:1px solid var(--border); padding-bottom:24px; margin-bottom:36px; }
+  .logo { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; letter-spacing:4px; text-transform:uppercase; color:var(--green); margin-bottom:8px; }
+  h1 { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; }
+  h1 span { color:var(--green); }
+  .subtitle { margin-top:8px; font-size:11px; color:var(--muted); letter-spacing:1px; }
+  .card { background:var(--surface); border:1px solid var(--border); padding:24px; margin-bottom:20px; }
+  .card-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--green); margin-bottom:16px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  label { display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; }
+  input, textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:'Space Mono',monospace; font-size:11px; padding:10px 12px; outline:none; transition:border-color 0.2s; }
+  textarea { resize:vertical; min-height:56px; }
+  input:focus, textarea:focus { border-color:var(--green); }
+  .btn { display:block; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; letter-spacing:2px; text-transform:uppercase; padding:14px 28px; border:none; cursor:pointer; width:100%; margin-top:8px; transition:background 0.2s; }
+  .btn:hover { background:#1ed760; }
+  .btn:disabled { background:var(--muted); cursor:not-allowed; color:#333; }
+  .btn-outline { background:transparent; color:var(--green); border:1px solid var(--green); }
+  .btn-outline:hover { background:var(--green); color:#000; }
+  .btn-outline:disabled { border-color:var(--muted); color:var(--muted); background:transparent; }
+  .step { display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--border); margin-bottom:10px; transition:border-color 0.3s; }
+  .step.active { border-color:var(--green); }
+  .step.done { border-color:#158a3e; }
+  .step-num { width:28px; height:28px; border:1px solid var(--muted); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .step.active .step-num { border-color:var(--green); color:var(--green); }
+  .step.done .step-num { border-color:var(--green); background:var(--green); color:#000; }
+  .step-label { font-size:12px; flex:1; }
+  .step-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+  .step-badge { font-size:10px; color:var(--green); }
+  .callout { background:#0d1f0d; border:1px solid #1a3d1a; padding:16px; margin:12px 0; font-size:11px; line-height:2; }
+  .callout b { color:var(--green); }
+  .progress-wrap { display:none; margin-top:16px; }
+  .progress-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between; }
+  .progress-bar-bg { height:2px; background:var(--border); overflow:hidden; }
+  .progress-bar { height:100%; background:var(--green); width:0%; transition:width 0.3s; }
+  .track-list { margin-top:20px; max-height:340px; overflow-y:auto; border:1px solid var(--border); display:none; }
+  .track-item { display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--border); font-size:11px; opacity:0.3; transition:opacity 0.3s; }
+  .track-item:last-child { border-bottom:none; }
+  .track-item.done, .track-item.error { opacity:1; }
+  .track-num { color:var(--muted); text-align:right; font-size:10px; }
+  .track-info { overflow:hidden; }
+  .track-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track-artist { font-size:10px; color:var(--muted); margin-top:2px; }
+  .track-status { font-size:10px; white-space:nowrap; }
+  .status-ok { color:var(--green); text-decoration:none; }
+  .status-ok:hover { text-decoration:underline; }
+  .status-err { color:var(--error); }
+  .actions { display:none; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .msg { font-size:11px; margin-top:12px; padding:12px 14px; border:1px solid var(--border); display:none; line-height:1.7; }
+  .msg.success { border-color:var(--green); color:var(--green); }
+  .msg.error { border-color:var(--error); color:var(--error); }
+  .msg a { color:var(--green); }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">mixmag tracklist tool</div>
+    <h1>Spotify <span>Playlist</span> Maker</h1>
+    <p class="subtitle">// 52 tracks — links opzoeken, Excel exporteren & playlist aanmaken</p>
+  </header>
+
+  <div class="card">
+    <div class="card-title">// Credentials</div>
+    <div class="grid2">
+      <div><label>Client ID</label><input type="text" id="clientId" value="88fc6b255dc041899799dfbd4e113100"></div>
+      <div><label>Client Secret</label><input type="password" id="clientSecret" value="f2fe87713e914591a57e047593ee3ba8"></div>
+    </div>
+
+    <div class="card-title" style="margin-top:20px">// Stappen</div>
+
+    <div class="step active" id="step-login">
+      <div class="step-num">1</div>
+      <div><div class="step-label">Inloggen via Spotify</div><div class="step-sub">Klik, log in, kopieer de code uit de URL</div></div>
+      <span class="step-badge" id="login-badge"></span>
+    </div>
+    <div class="step" id="step-search">
+      <div class="step-num">2</div>
+      <div><div class="step-label">Tracks opzoeken</div><div class="step-sub">Alle 52 tracks zoeken via Spotify</div></div>
+      <span class="step-badge" id="search-badge"></span>
+    </div>
+    <div class="step" id="step-playlist">
+      <div class="step-num">3</div>
+      <div><div class="step-label">Playlist aanmaken</div><div class="step-sub">Mixmag Top 52 in jouw Spotify account</div></div>
+      <span class="step-badge" id="playlist-badge"></span>
+    </div>
+
+    <div id="loginSection">
+      <button class="btn" onclick="loginSpotify()">▶ Stap 1 — Inloggen bij Spotify</button>
+      <div class="callout">
+        <b>Na het klikken:</b><br>
+        1. Log in bij Spotify en klik "Akkoord"<br>
+        2. Je browser geeft een foutpagina — dat is normaal ✓<br>
+        3. Kijk in de adresbalk: daar staat <b>?code=XXXXXX</b><br>
+        4. Kopieer alleen de code (alles na <b>code=</b>) en plak hieronder
+      </div>
+      <div id="codeSection" style="display:none">
+        <label>Plak hier de code uit de URL</label>
+        <input type="text" id="authCode" placeholder="AQD3x9...">
+        <button class="btn" onclick="exchangeCode()">▶ Inloggen & tracks zoeken</button>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressLabel">Tracks opzoeken...</span>
+        <span id="progressText">0 / 52</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="track-list" id="trackList"></div>
+
+  <div class="actions" id="actions">
+    <button class="btn btn-outline" onclick="downloadExcel()">↓ Download Excel</button>
+    <button class="btn" id="playlistBtn" onclick="createPlaylist()">♫ Maak Spotify Playlist</button>
+  </div>
+</div>
+
+<script>
+const REDIRECT_URI = "https://flambo77.github.io/mixmag-spotify/callback.html";
+const SCOPES = "playlist-modify-public playlist-modify-private";
+
+const tracks = [
+  [1,"Thomas Bangalter","Mythologies L Accouchement","Thomas Bangalter","Mythologies: X. L'Accouchement"],
+  [2,"Fingers Inc","My House Jack Had a Groove","Fingers Inc.","My House Acapella (Jack Had a Groove)"],
+  [3,"Daft Punk","One More Time","Daft Punk","One More Time"],
+  [4,"Marvin Gaye","Ain't No Mountain High Enough","Marvin Gaye","Ain't No Mountain High Enough"],
+  [5,"Fred again","Marea We've Lost Dancing","Fred again..","Marea (We've Lost Dancing)"],
+  [6,"Tessela","Hackney Parrot","Tessela","Hackney Parrot (Sammy Virji's Hackney Pigeon Dub)"],
+  [7,"Daft Punk","Rollin Scratchin","Daft Punk","Rollin' & Scratchin'"],
+  [8,"Thomas Bangalter","Spinal Scratch","Thomas Bangalter","Spinal Scratch"],
+  [9,"808 State","Cubik","808 State","Cubik"],
+  [10,"Fred again Skrillex","Baby Again","Fred again.., Skrillex","Baby Again.."],
+  [11,"Skrillex Fred again Flowdan","Rumble","Skrillex, Fred again.. & Flowdan","Rumble"],
+  [12,"Wildchild","Renegade Master","Wildchild","Renegade Master (Acapella)"],
+  [13,"LFO","LFO Leeds Warehouse Mix","LFO","LFO (Leeds Warehouse Mix)"],
+  [14,"Daft Punk","Crescendolls","Daft Punk","Crescendolls (MPH edit)"],
+  [15,"Daft Punk","Technologic","Daft Punk","Technologic"],
+  [16,"curve","Stop Watch","cu.rve.","Stop & Watch"],
+  [17,"Zero","Pulse Z","Zero","Pulse Z"],
+  [18,"Dylan Brady","Needle Guy","Dylan Brady","Needle Guy"],
+  [19,"Adam F","Circles","Adam F","Circles"],
+  [20,"Animal Collective","My Girls","Animal Collective","My Girls"],
+  [21,"Daft Punk","Night Vision","Daft Punk","Night Vision (The Twelves Cover)"],
+  [22,"Daft Punk Panda Bear","Doin It Right","Daft Punk ft. Panda Bear","Doin' It Right (Thomas Bangalter edit)"],
+  [23,"Fred again Anderson Paak","places to be","Fred again.. & Anderson .Paak ft. Chika","places to be (Clipz Roller Mix)"],
+  [24,"Rob Dougan","Clubbed to Death","Rob Dougan","Clubbed to Death (Kurayamino Variation)"],
+  [25,"Gil Scott-Heron","The Revolution Will Not Be Televised","Gil Scott-Heron","The Revolution Will Not Be Televised"],
+  [26,"Usher Ludacris","Yeah","Usher ft. Ludacris & Lil John","Yeah!"],
+  [27,"Pascal","Serious Sounds","Pascal","Serious Sounds (VIP)"],
+  [28,"Daft Punk","Touch","Daft Punk ft. Paul Williams","Touch"],
+  [29,"Daft Punk Giorgio Moroder","Giorgio by Moroder","Daft Punk ft. Giorgio Moroder","Giorgio by Moroder"],
+  [30,"Fred again","Digital Love","Fred again..","Billie vs. Digital Love (Mash up)"],
+  [31,"Prince","Raspberry Beret","Prince & The Revolution","Raspberry Beret"],
+  [32,"Joy Orbison","Flight FM","Joy Orbison","Flight FM"],
+  [33,"Daft Punk","Teachers","Daft Punk","Teachers"],
+  [34,"Debo","South Side","Debo","South Side"],
+  [35,"Swedish House Mafia Fred again Future","Turn On The Lights again","Fred again.. & Swedish House Mafia ft. Future","Turn On The Lights again.."],
+  [36,"Daft Punk","Harder Better Faster Stronger","Daft Punk","Harder, Better, Faster, Stronger"],
+  [37,"Daft Punk","Aerodynamic","Daft Punk","Aerodynamic"],
+  [38,"Fred again PlaqueBoyMax Skepta","Victory Lap Five","Fred again.. & PlaqueBoyMax ft. Skepta","Victory Lap Five"],
+  [39,"The Weeknd Daft Punk","Starboy","The Weeknd ft. Daft Punk","Starboy"],
+  [40,"Fred again Baby Keem","leavemealone","Fred again.. & Baby Keem","leavemealone (Nia Archives remix)"],
+  [41,"Thomas Bangalter","Mythologies Les Amazones","Thomas Bangalter","Mythologies: V. Les Amazones"],
+  [42,"Stardust","Music Sounds Better With You","Stardust","Music Sounds Better With You"],
+  [43,"Daft Punk","Da Funk","Daft Punk","Da Funk (Armand Van Helden mix)"],
+  [44,"Tony Romera","2009","Tony Romera","2009"],
+  [45,"Fred again BIA","ICEY","Fred again.. ft. BIA","ICEY"],
+  [46,"Roxb","never the end","Roxb","never the end"],
+  [47,"Caribou","Can't Do Without You","Caribou","Can't Do Without You"],
+  [48,"DJ Mehdi","Signatune","DJ Mehdi","Signatune (Thomas Bangalter edit)"],
+  [49,"Daft Punk","Around the World","Daft Punk","Around the World"],
+  [50,"Fred again","Delilah pull me out of this","Fred again..","Delilah (pull me out of this)"],
+  [51,"Fred again Soak","Just Stand There","Fred again.. & Soak","Just Stand There"],
+  [52,"Daft Punk","One More Time","Daft Punk","One More Time"],
+];
+
+let accessToken = null;
+let results = [];
+
+function loginSpotify() {
+  const clientId = document.getElementById("clientId").value.trim();
+  if (!clientId) { alert("Vul je Client ID in."); return; }
+  const url = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
+  window.open(url, "_blank");
+  document.getElementById("codeSection").style.display = "block";
+}
+
+async function exchangeCode() {
+  const code = document.getElementById("authCode").value.trim();
+  const clientId = document.getElementById("clientId").value.trim();
+  const clientSecret = document.getElementById("clientSecret").value.trim();
+  if (!code) { showMsg("❌ Plak eerst de code uit de URL.", "error"); return; }
+
+  showMsg("⏳ Token ophalen...", "success");
+
+  try {
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      code: code,
+      redirect_uri: REDIRECT_URI,
+      client_id: clientId,
+      client_secret: clientSecret
+    });
+
+    const res = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString()
+    });
+
+    const data = await res.json();
+    if (!data.access_token) {
+      showMsg("❌ Token ophalen mislukt: " + (data.error_description || data.error || "onbekende fout"), "error");
+      return;
+    }
+
+    accessToken = data.access_token;
+    setStep("login", "done", "✓ ingelogd");
+    setStep("search", "active");
+    document.getElementById("loginSection").style.display = "none";
+    showMsg("✓ Ingelogd! Tracks worden nu opgezocht...", "success");
+    setTimeout(searchTracks, 400);
+
+  } catch(e) {
+    showMsg("❌ Fout: " + e.message, "error");
+  }
+}
+
+function setStep(id, state, badge="") {
+  const el = document.getElementById(`step-${id}`);
+  el.className = `step ${state}`;
+  if (state === "done") el.querySelector(".step-num").textContent = "✓";
+  document.getElementById(`${id}-badge`).textContent = badge;
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById("msg");
+  el.innerHTML = text;
+  el.className = `msg ${type}`;
+  el.style.display = "block";
+}
+
+function buildList() {
+  const list = document.getElementById("trackList");
+  list.style.display = "block";
+  list.innerHTML = tracks.map(([num,,, dispArtist, dispTitle]) => `
+    <div class="track-item" id="track-${num}">
+      <span class="track-num">${num}</span>
+      <div class="track-info">
+        <div class="track-title">${dispTitle}</div>
+        <div class="track-artist">${dispArtist}</div>
+      </div>
+      <span class="track-status" id="status-${num}">—</span>
+    </div>
+  `).join("");
+}
+
+async function searchTracks() {
+  document.getElementById("progressWrap").style.display = "block";
+  buildList();
+  results = [];
+  let found = 0;
+
+  for (let i = 0; i < tracks.length; i++) {
+    const [num, searchArtist, searchTitle, dispArtist, dispTitle] = tracks[i];
+    const item = document.getElementById(`track-${num}`);
+    const statusEl = document.getElementById(`status-${num}`);
+    item.scrollIntoView({ behavior:"smooth", block:"nearest" });
+    document.getElementById("progressLabel").textContent = `${dispArtist} — ${dispTitle}`;
+
+    try {
+      const q = encodeURIComponent(`${searchArtist} ${searchTitle}`);
+      const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=1`, {
+        headers: { "Authorization": `Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+      const items = data.tracks?.items;
+      const track = items && items.length > 0 ? items[0] : null;
+      const url = track ? track.external_urls.spotify : "";
+      const uri = track ? track.uri : "";
+      results.push({ num, artist: dispArtist, title: dispTitle, url, uri });
+      item.classList.add("done");
+      if (url) {
+        statusEl.innerHTML = `<a href="${url}" target="_blank" class="status-ok">✓ open</a>`;
+        found++;
+      } else {
+        statusEl.innerHTML = `<span class="status-err">niet gevonden</span>`;
+      }
+    } catch(e) {
+      results.push({ num, artist: dispArtist, title: dispTitle, url:"", uri:"" });
+      item.classList.add("error");
+      statusEl.innerHTML = `<span class="status-err">fout</span>`;
+    }
+
+    const pct = Math.round(((i+1)/tracks.length)*100);
+    document.getElementById("progressBar").style.width = pct + "%";
+    document.getElementById("progressText").textContent = `${i+1} / ${tracks.length}`;
+    await new Promise(r => setTimeout(r, 120));
+  }
+
+  setStep("search", "done", `✓ ${found}/52`);
+  setStep("playlist", "active");
+  document.getElementById("actions").style.display = "grid";
+  showMsg(`✓ ${found} van de 52 tracks gevonden op Spotify.`, "success");
+}
+
+async function createPlaylist() {
+  const btn = document.getElementById("playlistBtn");
+  btn.disabled = true;
+  btn.textContent = "Bezig...";
+
+  try {
+    const meRes = await fetch("https://api.spotify.com/v1/me", {
+      headers: { "Authorization": `Bearer ${accessToken}` }
+    });
+    const me = await meRes.json();
+
+    const createRes = await fetch(`https://api.spotify.com/v1/users/${me.id}/playlists`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Mixmag Top 52 — Fred again.. & Daft Punk",
+        description: "Mixmag tracklist: de beste tracks van Fred again.. en Daft Punk",
+        public: true
+      })
+    });
+    const playlist = await createRes.json();
+
+    const uris = results.filter(r => r.uri).map(r => r.uri);
+    for (let i = 0; i < uris.length; i += 100) {
+      await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ uris: uris.slice(i, i+100) })
+      });
+    }
+
+    setStep("playlist", "done", "✓ aangemaakt");
+    const url = playlist.external_urls.spotify;
+    showMsg(`✓ Playlist aangemaakt met ${uris.length} tracks!<br><a href="${url}" target="_blank">→ Open in Spotify</a>`, "success");
+    btn.textContent = "✓ Aangemaakt";
+
+  } catch(e) {
+    showMsg("❌ Fout: " + e.message, "error");
+    btn.disabled = false;
+    btn.textContent = "♫ Maak Spotify Playlist";
+  }
+}
+
+function downloadExcel() {
+  const wb = XLSX.utils.book_new();
+  const wsData = [["#","Artiest","Titel","Spotify Link"]];
+  results.forEach(({num,artist,title,url}) => wsData.push([num,artist,title,url]));
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws["!cols"] = [{wch:5},{wch:45},{wch:55},{wch:55}];
+  XLSX.utils.book_append_sheet(wb, ws, "Mixmag Tracklist");
+  XLSX.writeFile(wb, "mixmag_tracklist_spotify.xlsx");
+}
+</script>
+</body>
+</html>
