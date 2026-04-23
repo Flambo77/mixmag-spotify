@@ -17,17 +17,14 @@
   .subtitle { margin-top:8px; font-size:11px; color:var(--muted); letter-spacing:1px; }
   .card { background:var(--surface); border:1px solid var(--border); padding:24px; margin-bottom:20px; }
   .card-title { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--green); margin-bottom:16px; }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
   label { display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; }
-  input, textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:'Space Mono',monospace; font-size:11px; padding:10px 12px; outline:none; transition:border-color 0.2s; }
-  textarea { resize:vertical; min-height:56px; }
-  input:focus, textarea:focus { border-color:var(--green); }
+  input { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); font-family:'Space Mono',monospace; font-size:11px; padding:10px 12px; outline:none; transition:border-color 0.2s; margin-bottom:12px; }
+  input:focus { border-color:var(--green); }
   .btn { display:block; background:var(--green); color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; letter-spacing:2px; text-transform:uppercase; padding:14px 28px; border:none; cursor:pointer; width:100%; margin-top:8px; transition:background 0.2s; }
   .btn:hover { background:#1ed760; }
   .btn:disabled { background:var(--muted); cursor:not-allowed; color:#333; }
   .btn-outline { background:transparent; color:var(--green); border:1px solid var(--green); }
   .btn-outline:hover { background:var(--green); color:#000; }
-  .btn-outline:disabled { border-color:var(--muted); color:var(--muted); background:transparent; }
   .step { display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--border); margin-bottom:10px; transition:border-color 0.3s; }
   .step.active { border-color:var(--green); }
   .step.done { border-color:#158a3e; }
@@ -37,10 +34,8 @@
   .step-label { font-size:12px; flex:1; }
   .step-sub { font-size:10px; color:var(--muted); margin-top:2px; }
   .step-badge { font-size:10px; color:var(--green); }
-  .callout { background:#0d1f0d; border:1px solid #1a3d1a; padding:16px; margin:12px 0; font-size:11px; line-height:2; }
-  .callout b { color:var(--green); }
   .progress-wrap { display:none; margin-top:16px; }
-  .progress-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between; }
+  .progress-label { font-size:10px; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between; }
   .progress-bar-bg { height:2px; background:var(--border); overflow:hidden; }
   .progress-bar { height:100%; background:var(--green); width:0%; transition:width 0.3s; }
   .track-list { margin-top:20px; max-height:340px; overflow-y:auto; border:1px solid var(--border); display:none; }
@@ -74,17 +69,14 @@
   </header>
 
   <div class="card">
-    <div class="card-title">// Credentials</div>
-    <div class="grid2">
-      <div><label>Client ID</label><input type="text" id="clientId" value="88fc6b255dc041899799dfbd4e113100"></div>
-      <div><label>Client Secret</label><input type="password" id="clientSecret" value="f2fe87713e914591a57e047593ee3ba8"></div>
-    </div>
+    <div class="card-title">// Client ID</div>
+    <label>Client ID</label>
+    <input type="text" id="clientId" value="88fc6b255dc041899799dfbd4e113100">
 
-    <div class="card-title" style="margin-top:20px">// Stappen</div>
-
+    <div class="card-title" style="margin-top:8px">// Stappen</div>
     <div class="step active" id="step-login">
       <div class="step-num">1</div>
-      <div><div class="step-label">Inloggen via Spotify</div><div class="step-sub">Klik, log in, kopieer de code uit de URL</div></div>
+      <div><div class="step-label">Inloggen via Spotify</div><div class="step-sub">Volledig automatisch — geen code kopiëren nodig</div></div>
       <span class="step-badge" id="login-badge"></span>
     </div>
     <div class="step" id="step-search">
@@ -98,21 +90,7 @@
       <span class="step-badge" id="playlist-badge"></span>
     </div>
 
-    <div id="loginSection">
-      <button class="btn" onclick="loginSpotify()">▶ Stap 1 — Inloggen bij Spotify</button>
-      <div class="callout">
-        <b>Na het klikken:</b><br>
-        1. Log in bij Spotify en klik "Akkoord"<br>
-        2. Je browser geeft een foutpagina — dat is normaal ✓<br>
-        3. Kijk in de adresbalk: daar staat <b>?code=XXXXXX</b><br>
-        4. Kopieer alleen de code (alles na <b>code=</b>) en plak hieronder
-      </div>
-      <div id="codeSection" style="display:none">
-        <label>Plak hier de code uit de URL</label>
-        <input type="text" id="authCode" placeholder="AQD3x9...">
-        <button class="btn" onclick="exchangeCode()">▶ Inloggen & tracks zoeken</button>
-      </div>
-    </div>
+    <button class="btn" id="loginBtn" onclick="startLogin()">▶ Inloggen bij Spotify</button>
 
     <div class="progress-wrap" id="progressWrap">
       <div class="progress-label">
@@ -121,7 +99,6 @@
       </div>
       <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
     </div>
-
     <div class="msg" id="msg"></div>
   </div>
 
@@ -134,7 +111,8 @@
 </div>
 
 <script>
-const REDIRECT_URI = "https://flambo77.github.io/mixmag-spotify/callback.html";
+const CLIENT_ID = "88fc6b255dc041899799dfbd4e113100";
+const REDIRECT_URI = "https://flambo77.github.io/mixmag-spotify/index.html";
 const SCOPES = "playlist-modify-public playlist-modify-private";
 
 const tracks = [
@@ -195,73 +173,89 @@ const tracks = [
 let accessToken = null;
 let results = [];
 
-function loginSpotify() {
-  const clientId = document.getElementById("clientId").value.trim();
-  if (!clientId) { alert("Vul je Client ID in."); return; }
-  const url = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
-  window.open(url, "_blank");
-  document.getElementById("codeSection").style.display = "block";
+function generateRandomString(length) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  return result;
 }
 
-async function exchangeCode() {
-  const code = document.getElementById("authCode").value.trim();
-  const clientId = document.getElementById("clientId").value.trim();
-  const clientSecret = document.getElementById("clientSecret").value.trim();
-  if (!code) { showMsg("❌ Plak eerst de code uit de URL.", "error"); return; }
+async function generateCodeChallenge(verifier) {
+  const data = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
-  showMsg("⏳ Token ophalen...", "success");
+async function startLogin() {
+  const verifier = generateRandomString(128);
+  const challenge = await generateCodeChallenge(verifier);
+  localStorage.setItem('pkce_verifier', verifier);
+  const url = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}&code_challenge_method=S256&code_challenge=${challenge}`;
+  window.location.href = url;
+}
 
-  try {
-    const body = new URLSearchParams({
-      grant_type: "authorization_code",
-      code: code,
-      redirect_uri: REDIRECT_URI,
-      client_id: clientId,
-      client_secret: clientSecret
-    });
+async function exchangeCodePKCE(code) {
+  const verifier = localStorage.getItem('pkce_verifier');
+  const body = new URLSearchParams({
+    client_id: CLIENT_ID,
+    grant_type: 'authorization_code',
+    code: code,
+    redirect_uri: REDIRECT_URI,
+    code_verifier: verifier
+  });
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString()
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error(data.error_description || data.error || JSON.stringify(data));
+  return data.access_token;
+}
 
-    const res = await fetch("https://accounts.spotify.com/api/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString()
-    });
-
-    const data = await res.json();
-    if (!data.access_token) {
-      showMsg("❌ Token ophalen mislukt: " + (data.error_description || data.error || "onbekende fout"), "error");
-      return;
+window.addEventListener('load', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+  if (error) { showMsg('❌ Inloggen geannuleerd.', 'error'); return; }
+  if (code) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    document.getElementById('loginBtn').disabled = true;
+    showMsg('⏳ Bezig met inloggen...', 'success');
+    try {
+      accessToken = await exchangeCodePKCE(code);
+      localStorage.removeItem('pkce_verifier');
+      setStep('login', 'done', '✓ ingelogd');
+      setStep('search', 'active');
+      document.getElementById('loginBtn').style.display = 'none';
+      showMsg('✓ Ingelogd! Tracks worden nu opgezocht...', 'success');
+      setTimeout(searchTracks, 400);
+    } catch(e) {
+      showMsg('❌ Inloggen mislukt: ' + e.message, 'error');
+      document.getElementById('loginBtn').disabled = false;
     }
-
-    accessToken = data.access_token;
-    setStep("login", "done", "✓ ingelogd");
-    setStep("search", "active");
-    document.getElementById("loginSection").style.display = "none";
-    showMsg("✓ Ingelogd! Tracks worden nu opgezocht...", "success");
-    setTimeout(searchTracks, 400);
-
-  } catch(e) {
-    showMsg("❌ Fout: " + e.message, "error");
   }
-}
+});
 
-function setStep(id, state, badge="") {
+function setStep(id, state, badge='') {
   const el = document.getElementById(`step-${id}`);
   el.className = `step ${state}`;
-  if (state === "done") el.querySelector(".step-num").textContent = "✓";
+  if (state === 'done') el.querySelector('.step-num').textContent = '✓';
   document.getElementById(`${id}-badge`).textContent = badge;
 }
 
 function showMsg(text, type) {
-  const el = document.getElementById("msg");
+  const el = document.getElementById('msg');
   el.innerHTML = text;
   el.className = `msg ${type}`;
-  el.style.display = "block";
+  el.style.display = 'block';
 }
 
 function buildList() {
-  const list = document.getElementById("trackList");
-  list.style.display = "block";
-  list.innerHTML = tracks.map(([num,,, dispArtist, dispTitle]) => `
+  const list = document.getElementById('trackList');
+  list.style.display = 'block';
+  list.innerHTML = tracks.map(([num,,,dispArtist,dispTitle]) => `
     <div class="track-item" id="track-${num}">
       <span class="track-num">${num}</span>
       <div class="track-info">
@@ -270,117 +264,92 @@ function buildList() {
       </div>
       <span class="track-status" id="status-${num}">—</span>
     </div>
-  `).join("");
+  `).join('');
 }
 
 async function searchTracks() {
-  document.getElementById("progressWrap").style.display = "block";
+  document.getElementById('progressWrap').style.display = 'block';
   buildList();
   results = [];
   let found = 0;
-
   for (let i = 0; i < tracks.length; i++) {
     const [num, searchArtist, searchTitle, dispArtist, dispTitle] = tracks[i];
     const item = document.getElementById(`track-${num}`);
     const statusEl = document.getElementById(`status-${num}`);
-    item.scrollIntoView({ behavior:"smooth", block:"nearest" });
-    document.getElementById("progressLabel").textContent = `${dispArtist} — ${dispTitle}`;
-
+    item.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    document.getElementById('progressLabel').textContent = `${dispArtist} — ${dispTitle}`;
     try {
       const q = encodeURIComponent(`${searchArtist} ${searchTitle}`);
       const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=1`, {
-        headers: { "Authorization": `Bearer ${accessToken}` }
+        headers: { 'Authorization': `Bearer ${accessToken}` }
       });
       const data = await res.json();
       const items = data.tracks?.items;
       const track = items && items.length > 0 ? items[0] : null;
-      const url = track ? track.external_urls.spotify : "";
-      const uri = track ? track.uri : "";
+      const url = track ? track.external_urls.spotify : '';
+      const uri = track ? track.uri : '';
       results.push({ num, artist: dispArtist, title: dispTitle, url, uri });
-      item.classList.add("done");
-      if (url) {
-        statusEl.innerHTML = `<a href="${url}" target="_blank" class="status-ok">✓ open</a>`;
-        found++;
-      } else {
-        statusEl.innerHTML = `<span class="status-err">niet gevonden</span>`;
-      }
+      item.classList.add('done');
+      if (url) { statusEl.innerHTML = `<a href="${url}" target="_blank" class="status-ok">✓ open</a>`; found++; }
+      else { statusEl.innerHTML = `<span class="status-err">niet gevonden</span>`; }
     } catch(e) {
-      results.push({ num, artist: dispArtist, title: dispTitle, url:"", uri:"" });
-      item.classList.add("error");
+      results.push({ num, artist: dispArtist, title: dispTitle, url:'', uri:'' });
+      item.classList.add('error');
       statusEl.innerHTML = `<span class="status-err">fout</span>`;
     }
-
     const pct = Math.round(((i+1)/tracks.length)*100);
-    document.getElementById("progressBar").style.width = pct + "%";
-    document.getElementById("progressText").textContent = `${i+1} / ${tracks.length}`;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = `${i+1} / ${tracks.length}`;
     await new Promise(r => setTimeout(r, 120));
   }
-
-  setStep("search", "done", `✓ ${found}/52`);
-  setStep("playlist", "active");
-  document.getElementById("actions").style.display = "grid";
-  showMsg(`✓ ${found} van de 52 tracks gevonden op Spotify.`, "success");
+  setStep('search', 'done', `✓ ${found}/52`);
+  setStep('playlist', 'active');
+  document.getElementById('actions').style.display = 'grid';
+  showMsg(`✓ ${found} van de 52 tracks gevonden op Spotify.`, 'success');
 }
 
 async function createPlaylist() {
-  const btn = document.getElementById("playlistBtn");
+  const btn = document.getElementById('playlistBtn');
   btn.disabled = true;
-  btn.textContent = "Bezig...";
-
+  btn.textContent = 'Bezig...';
   try {
-    const meRes = await fetch("https://api.spotify.com/v1/me", {
-      headers: { "Authorization": `Bearer ${accessToken}` }
-    });
+    const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { 'Authorization': `Bearer ${accessToken}` } });
     const me = await meRes.json();
-
+    if (!me.id) throw new Error('Kon gebruiker niet ophalen');
     const createRes = await fetch(`https://api.spotify.com/v1/users/${me.id}/playlists`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Mixmag Top 52 — Fred again.. & Daft Punk",
-        description: "Mixmag tracklist: de beste tracks van Fred again.. en Daft Punk",
-        public: true
-      })
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Mixmag Top 52 — Fred again.. & Daft Punk', description: 'Mixmag tracklist', public: true })
     });
     const playlist = await createRes.json();
-
-    if (!playlist.id) {
-      showMsg("❌ Playlist aanmaken mislukt: " + JSON.stringify(playlist), "error");
-      btn.disabled = false;
-      btn.textContent = "♫ Maak Spotify Playlist";
-      return;
-    }
-
+    if (!playlist.id) throw new Error('Playlist aanmaken mislukt: ' + JSON.stringify(playlist));
     const uris = results.filter(r => r.uri).map(r => r.uri);
     for (let i = 0; i < uris.length; i += 100) {
       await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ uris: uris.slice(i, i+100) })
       });
     }
-
-    setStep("playlist", "done", "✓ aangemaakt");
-    const playlistId = playlist.id;
-    const url = `https://open.spotify.com/playlist/${playlistId}`;
-    showMsg(`✓ Playlist aangemaakt met ${uris.length} tracks!<br><a href="${url}" target="_blank">→ Open in Spotify</a>`, "success");
-    btn.textContent = "✓ Aangemaakt";
-
+    setStep('playlist', 'done', '✓ aangemaakt');
+    const url = `https://open.spotify.com/playlist/${playlist.id}`;
+    showMsg(`✓ Playlist aangemaakt met ${uris.length} tracks!<br><a href="${url}" target="_blank">→ Open in Spotify</a>`, 'success');
+    btn.textContent = '✓ Aangemaakt';
   } catch(e) {
-    showMsg("❌ Fout: " + e.message, "error");
+    showMsg('❌ Fout: ' + e.message, 'error');
     btn.disabled = false;
-    btn.textContent = "♫ Maak Spotify Playlist";
+    btn.textContent = '♫ Maak Spotify Playlist';
   }
 }
 
 function downloadExcel() {
   const wb = XLSX.utils.book_new();
-  const wsData = [["#","Artiest","Titel","Spotify Link"]];
+  const wsData = [['#','Artiest','Titel','Spotify Link']];
   results.forEach(({num,artist,title,url}) => wsData.push([num,artist,title,url]));
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws["!cols"] = [{wch:5},{wch:45},{wch:55},{wch:55}];
-  XLSX.utils.book_append_sheet(wb, ws, "Mixmag Tracklist");
-  XLSX.writeFile(wb, "mixmag_tracklist_spotify.xlsx");
+  ws['!cols'] = [{wch:5},{wch:45},{wch:55},{wch:55}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Mixmag Tracklist');
+  XLSX.writeFile(wb, 'mixmag_tracklist_spotify.xlsx');
 }
 </script>
 </body>
