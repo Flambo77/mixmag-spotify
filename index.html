@@ -344,6 +344,13 @@ async function createPlaylist() {
     });
     const playlist = await createRes.json();
 
+    if (!playlist.id) {
+      showMsg("❌ Playlist aanmaken mislukt: " + JSON.stringify(playlist), "error");
+      btn.disabled = false;
+      btn.textContent = "♫ Maak Spotify Playlist";
+      return;
+    }
+
     const uris = results.filter(r => r.uri).map(r => r.uri);
     for (let i = 0; i < uris.length; i += 100) {
       await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
@@ -354,7 +361,8 @@ async function createPlaylist() {
     }
 
     setStep("playlist", "done", "✓ aangemaakt");
-    const url = playlist.external_urls.spotify;
+    const playlistId = playlist.id;
+    const url = `https://open.spotify.com/playlist/${playlistId}`;
     showMsg(`✓ Playlist aangemaakt met ${uris.length} tracks!<br><a href="${url}" target="_blank">→ Open in Spotify</a>`, "success");
     btn.textContent = "✓ Aangemaakt";
 
